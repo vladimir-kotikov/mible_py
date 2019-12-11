@@ -1,3 +1,4 @@
--e requirements.txt
+-r requirements.txt
 black==19.10b0
 rope==0.14.0
+mypy==0.750

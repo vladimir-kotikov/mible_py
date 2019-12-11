@@ -10,7 +10,12 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": false
+            "justMyCode": false,
+            "args": [
+                "--debug",
+                "--mible_address",
+                "4C:65:A8:DC:07:4D",
+            ]
         }
     ]
 }

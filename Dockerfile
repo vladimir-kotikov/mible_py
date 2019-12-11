@@ -8,9 +8,14 @@ RUN pip install -U pip wheel && pip wheel -r requirements.txt
 FROM python:alpine
 WORKDIR /app
 
+RUN apk add --no-cache glib
 COPY --from=0 /wheels /wheels
 RUN pip install -r /wheels/requirements.txt -f /wheels \
     && rm -rf /wheels /root/.cache/pip/*
 
 COPY *.py ./
-CMD [ "python", "main.py" ]
+
+ENV broker_address=localhost
+ENV mible_address=
+
+CMD [ "python", "main.py"]
