@@ -18,4 +18,4 @@ COPY *.py ./
 ENV broker_address=localhost
 ENV mible_address=
 
-CMD [ "python", "main.py"]
+ENTRYPOINT [ "python", "main.py"]
