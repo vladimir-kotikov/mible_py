@@ -7,7 +7,7 @@ from btlewrap.bluepy import BluepyBackend
 import magiconf
 from mitemp_bt.mitemp_bt_poller import MI_HUMIDITY, MI_TEMPERATURE, MiTempBtPoller
 from paho.mqtt.client import Client
-
+import sentry_sdk
 
 logger = logging.getLogger("mible")
 
@@ -22,6 +22,7 @@ class Config:
     mible_address: str
     broker_address: str = "localhost"
     poll_interval: int = 30  # seconds
+    sentry_endpoint: str = ""
     debug: bool = False
 
     @classmethod
@@ -72,6 +73,9 @@ class MibleDevice:
 
 
 cfg = Config.load()
+
+if cfg.sentry_endpoint:
+    sentry_sdk.init(cfg.sentry_endpoint)
 
 logging.basicConfig(
     level=logging.DEBUG if cfg.debug else logging.INFO,
