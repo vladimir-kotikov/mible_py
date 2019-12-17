@@ -1,7 +1,7 @@
 TAG=vlkoti/mible
 
-build:
+image:
 	docker build -t $(TAG) .
 
-push:
-	docker push -t $(TAG)
+push: image
+	docker push $(TAG)
