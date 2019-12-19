@@ -1,4 +1,4 @@
-TAG=vlkoti/mible:go
+TAG=vlkoti/mible
 
 image:
 	docker build -t $(TAG) .
