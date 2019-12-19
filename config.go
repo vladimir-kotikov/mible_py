@@ -6,10 +6,10 @@ import (
 
 // Config holds handler configuration
 type Config struct {
-	BrokerAddress  string `cfgRequired:"true"`
-	DeviceAddress  string `cfgRequired:"true"`
-	UpdateInterval uint   `cfgDefault:"30"`
-	SentryDSN      string
+	BrokerAddress  string `cfg:"broker_address" cfgRequired:"true"`
+	DeviceAddress  string `cfg:"device_address" cfgRequired:"true"`
+	UpdateInterval uint   `cfg:"update_interval" cfgDefault:"30"`
+	SentryDSN      string `cfg:"sentry_dsn"`
 }
 
 // LoadConfig loads config from file
