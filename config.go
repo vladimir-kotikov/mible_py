@@ -8,7 +8,7 @@ import (
 type Config struct {
 	BrokerAddress  string `cfg:"broker_address" cfgRequired:"true"`
 	DeviceAddress  string `cfg:"device_address" cfgRequired:"true"`
-	UpdateInterval uint   `cfg:"update_interval" cfgDefault:"30"`
+	UpdateInterval int    `cfg:"update_interval" cfgDefault:"30"`
 	SentryDSN      string `cfg:"sentry_dsn"`
 }
 
