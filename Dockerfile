@@ -1,21 +1,15 @@
-FROM python:alpine
-WORKDIR /wheels
+FROM golang:alpine
+WORKDIR /build
 
-RUN apk add --no-cache build-base glib-dev
-COPY requirements.txt .
-RUN pip install -U pip wheel && pip wheel -r requirements.txt
+COPY *.go go.mod go.sum ./
+RUN go build
 
-FROM python:alpine
-WORKDIR /app
+FROM alpine
+COPY --from=0 /build/mible /mible
 
-RUN apk add --no-cache glib
-COPY --from=0 /wheels /wheels
-RUN pip install -r /wheels/requirements.txt -f /wheels \
-    && rm -rf /wheels /root/.cache/pip/*
+ENV brokeraddress=
+ENV deviceaddress=
+ENV updateinterval=
+ENV sentrydsn=
 
-COPY *.py ./
-
-ENV broker_address=localhost
-ENV mible_address=
-
-ENTRYPOINT [ "python", "main.py"]
+ENTRYPOINT [ "mible"]
