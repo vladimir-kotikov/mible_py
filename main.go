@@ -31,16 +31,11 @@ func main() {
 	driver := NewMibleDriver(adaptor, cfg.DeviceAddress)
 
 	broker := mqtt.NewAdaptor(cfg.BrokerAddress, "Mible")
-	queue := mqtt.NewDriver(broker, "")
 
 	work := func() {
 		safeAddress := strings.ToLower(strings.Replace(cfg.DeviceAddress, ":", "_", -1))
 		stateTopic := fmt.Sprintf("mible/%s/state", safeAddress)
-
 		for _, sensor := range sensors {
-			discoTopic := fmt.Sprintf("homeassistant/sensor/mible/%s/%s/config", safeAddress, sensor.Char)
-			queue.SetTopic(discoTopic)
-
 			payload := sensor.DiscoPayload()
 			payload.StateTopic = stateTopic
 			data, err := json.Marshal(payload)
@@ -50,10 +45,20 @@ func main() {
 				continue
 			}
 
-			queue.Publish(data)
+			discoTopic := fmt.Sprintf("homeassistant/sensor/mible/%s/%s/config", safeAddress, sensor.Char)
+			poken, err := broker.PublishWithQOS(discoTopic, 1, data)
+			if err != nil {
+				sentry.CaptureException(err)
+				log.Print("can't send discovery info to Home Assistant: ", err)
+				continue
+			}
+
+			if poken.WaitTimeout(1 * time.Second); poken.Error() != nil {
+				sentry.CaptureException(err)
+				log.Print("can't send discovery info to Home Assistant: ", poken.Error())
+			}
 		}
 
-		queue.SetTopic(stateTopic)
 		gobot.Every(time.Duration(cfg.UpdateInterval)*time.Second, func() {
 			p := StatePayload{
 				Temperature: driver.Temperature(),
@@ -68,13 +73,13 @@ func main() {
 			}
 
 			log.Print("data:", p)
-			queue.Publish(data)
+			broker.Publish(stateTopic, data)
 		})
 	}
 
 	robot := gobot.NewRobot("Mible",
 		[]gobot.Connection{adaptor, broker},
-		[]gobot.Device{driver, queue},
+		[]gobot.Device{driver},
 		work,
 	)
 
