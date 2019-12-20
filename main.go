@@ -8,11 +8,13 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
+	"github.com/pkg/errors"
+
 	"gobot.io/x/gobot"
 	"gobot.io/x/gobot/platforms/mqtt"
 )
 
-var sensors = []Sensor{
+var sensors = []*Sensor{
 	NewSensor("Mible temperature", "temperature", "C"),
 	NewSensor("Mible humidity", "humidity", "%"),
 }
@@ -36,44 +38,17 @@ func main() {
 		safeAddress := strings.ToLower(strings.Replace(cfg.DeviceAddress, ":", "_", -1))
 		stateTopic := fmt.Sprintf("mible/%s/state", safeAddress)
 		for _, sensor := range sensors {
-			payload := sensor.DiscoPayload()
-			payload.StateTopic = stateTopic
-			data, err := json.Marshal(payload)
-			if err != nil {
-				sentry.CaptureException(err)
-				log.Print("can't serialize disco payload")
-				continue
-			}
-
 			discoTopic := fmt.Sprintf("homeassistant/sensor/mible/%s/%s/config", safeAddress, sensor.Char)
-			poken, err := broker.PublishWithQOS(discoTopic, 1, data)
+			err := publishDisco(sensor, broker, stateTopic, discoTopic)
 			if err != nil {
 				sentry.CaptureException(err)
-				log.Print("can't send discovery info to Home Assistant: ", err)
-				continue
-			}
-
-			if poken.WaitTimeout(1 * time.Second); poken.Error() != nil {
-				sentry.CaptureException(err)
-				log.Print("can't send discovery info to Home Assistant: ", poken.Error())
+				log.Fatal(err)
 			}
 		}
 
+		publishReadings(driver, broker, stateTopic)
 		gobot.Every(time.Duration(cfg.UpdateInterval)*time.Second, func() {
-			p := StatePayload{
-				Temperature: driver.Temperature(),
-				Humidity:    driver.Humidity(),
-			}
-
-			data, err := json.Marshal(p)
-			if err != nil {
-				sentry.CaptureException(err)
-				log.Print("can't convert sensor readings to JSON")
-				return
-			}
-
-			log.Print("data:", p)
-			broker.Publish(stateTopic, data)
+			publishReadings(driver, broker, stateTopic)
 		})
 	}
 
@@ -84,4 +59,41 @@ func main() {
 	)
 
 	robot.Start()
+}
+
+func publishDisco(sensor *Sensor, broker *mqtt.Adaptor, stateTopic, discoTopic string) error {
+	payload := sensor.DiscoPayload()
+	payload.StateTopic = stateTopic
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return errors.Wrap(err, "can't serialize disco payload")
+	}
+
+	poken, err := broker.PublishWithQOS(discoTopic, 1, data)
+	if err != nil {
+		return errors.Wrap(err, "can't send discovery info to Home Assistant")
+	}
+
+	if poken.WaitTimeout(1 * time.Second); poken.Error() != nil {
+		return errors.Wrap(poken.Error(), "can't send discovery info to Home Assistant")
+	}
+
+	return nil
+}
+
+func publishReadings(driver *MibleDriver, broker *mqtt.Adaptor, topic string) {
+	p := StatePayload{
+		Temperature: driver.Temperature(),
+		Humidity:    driver.Humidity(),
+	}
+
+	data, err := json.Marshal(p)
+	if err != nil {
+		sentry.CaptureException(err)
+		log.Print("can't convert sensor readings to JSON")
+		return
+	}
+
+	log.Print("data:", p)
+	broker.Publish(topic, data)
 }

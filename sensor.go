@@ -27,8 +27,8 @@ type Sensor struct {
 }
 
 // NewSensor creates a new sensor
-func NewSensor(name, char, unit string) Sensor {
-	return Sensor{name, char, unit}
+func NewSensor(name, char, unit string) *Sensor {
+	return &Sensor{name, char, unit}
 }
 
 // DiscoPayload returns MQTT disco payload to send to home assistant
