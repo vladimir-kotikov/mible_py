@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 
 	"gobot.io/x/gobot"
-	"gobot.io/x/gobot/platforms/mqtt"
 )
 
 var sensors = []*Sensor{
@@ -32,7 +31,7 @@ func main() {
 	adaptor := NewBluetoothAdapter()
 	driver := NewMibleDriver(adaptor, cfg.DeviceAddress)
 
-	broker := mqtt.NewAdaptor(cfg.BrokerAddress, "Mible")
+	broker := NewAdaptor(cfg.BrokerAddress, "Mible")
 
 	work := func() {
 		safeAddress := strings.ToLower(strings.Replace(cfg.DeviceAddress, ":", "_", -1))
@@ -61,7 +60,7 @@ func main() {
 	robot.Start()
 }
 
-func publishDisco(sensor *Sensor, broker *mqtt.Adaptor, stateTopic, discoTopic string) error {
+func publishDisco(sensor *Sensor, broker *Adaptor, stateTopic, discoTopic string) error {
 	payload := sensor.DiscoPayload()
 	payload.StateTopic = stateTopic
 	data, err := json.Marshal(payload)
@@ -81,7 +80,7 @@ func publishDisco(sensor *Sensor, broker *mqtt.Adaptor, stateTopic, discoTopic s
 	return nil
 }
 
-func publishReadings(driver *MibleDriver, broker *mqtt.Adaptor, topic string) {
+func publishReadings(driver *MibleDriver, broker *Adaptor, topic string) {
 	p := StatePayload{
 		Temperature: driver.Temperature(),
 		Humidity:    driver.Humidity(),
@@ -95,5 +94,5 @@ func publishReadings(driver *MibleDriver, broker *mqtt.Adaptor, topic string) {
 	}
 
 	log.Print("data:", p)
-	broker.Publish(topic, data)
+	broker.PublishAndRetain(topic, data)
 }
