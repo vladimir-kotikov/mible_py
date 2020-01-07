@@ -6,6 +6,8 @@ import (
 
 	"encoding/binary"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/go-ble/ble"
 	"gobot.io/x/gobot"
 )
@@ -14,6 +16,9 @@ var miUUID = ble.UUID16(0xfe95)
 
 const (
 	allowDuplicates = true
+	temperature     = 0x04
+	humidity        = 0x06
+	composite       = 0x0d
 )
 
 // MibleDriver ...
@@ -25,16 +30,17 @@ type MibleDriver struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	temp float32
-	humi float32
+	characteristics map[string]float32
 }
 
 // NewMibleDriver ...
-func NewMibleDriver(adapter *BluetoothAdapter, address string) *MibleDriver {
+func NewMibleDriver(adapter *BluetoothAdapter, name, address string) *MibleDriver {
 	return &MibleDriver{
 		adapter: adapter,
 		address: address,
-		name:    gobot.DefaultName("MibleDriver"),
+		name:    name,
+
+		characteristics: make(map[string]float32),
 	}
 }
 
@@ -48,21 +54,21 @@ func (driver *MibleDriver) SetName(s string) {
 	driver.name = s
 }
 
+func (driver *MibleDriver) updateCharacteristics(updates map[string]float32) {
+	for k, v := range updates {
+		driver.characteristics[k] = v
+	}
+}
+
 // Start initiates the Driver
 func (driver *MibleDriver) Start() error {
 	// Scan for specified durantion, or until interrupted by user.
-	ctx, cancel := context.WithCancel(context.Background())
-	driver.ctx = ctx
-	driver.cancel = cancel
+	driver.ctx, driver.cancel = context.WithCancel(context.Background())
 
 	advHandler := func(a ble.Advertisement) {
-		temp, humi := parseServiceData(a.ServiceData())
-		if temp != nil {
-			driver.temp = *temp
-		}
-		if humi != nil {
-			driver.humi = *humi
-		}
+		chars := parseServiceData(a.ServiceData())
+		log.Debugln("characteristics:", chars)
+		driver.updateCharacteristics(chars)
 	}
 
 	advFilter := func(a ble.Advertisement) bool {
@@ -70,10 +76,9 @@ func (driver *MibleDriver) Start() error {
 	}
 
 	go func() {
-		ble.Scan(ctx, allowDuplicates, advHandler, advFilter)
+		ble.Scan(driver.ctx, allowDuplicates, advHandler, advFilter)
 	}()
 
-	// return ble.Scan(ctx, allowDuplicates, advHandler, advFilter)
 	return nil
 }
 
@@ -98,22 +103,27 @@ func (driver *MibleDriver) Connection() gobot.Connection {
 	return driver.adapter
 }
 
-// Temperature returns last read temperature value
-func (driver *MibleDriver) Temperature() float32 {
-	return driver.temp
+// ID returns device's uniquee name (based on MAC address)
+func (driver *MibleDriver) ID() string {
+	return strings.ToLower(strings.Replace(driver.address, ":", "_", -1))
 }
 
-// Humidity returns last read humidity value
-func (driver *MibleDriver) Humidity() float32 {
-	return driver.humi
-}
-
-func parseServiceData(serviceData []ble.ServiceData) (*float32, *float32) {
-	if len(serviceData) == 0 {
-		return nil, nil
+// GetCharacteristic returns characteristic value by name or nil if no such characteristic found
+func (driver *MibleDriver) GetCharacteristic(charName string) *float32 {
+	val, ok := driver.characteristics[charName]
+	if !ok {
+		return nil
 	}
 
-	var temp, humi float32
+	return &val
+}
+
+func parseServiceData(serviceData []ble.ServiceData) map[string]float32 {
+	result := make(map[string]float32)
+	if len(serviceData) == 0 {
+		return result
+	}
+
 	for _, sData := range serviceData {
 		if !sData.UUID.Equal(miUUID) {
 			continue
@@ -125,15 +135,23 @@ func parseServiceData(serviceData []ble.ServiceData) (*float32, *float32) {
 		sensorData := rawData[3 : 3+dataLen]
 
 		switch dataType {
-		case 0x0d:
-			temp = float32(int16(binary.LittleEndian.Uint16(sensorData))) / 10
-			humi = float32(binary.LittleEndian.Uint16(sensorData[2:])) / 10
-		case 0x04:
-			temp = float32(int16(binary.LittleEndian.Uint16(sensorData))) / 10
-		case 0x06:
-			humi = float32(binary.LittleEndian.Uint16(sensorData)) / 10
+		case temperature:
+			result["temperature"] = parseTemperature(sensorData)
+		case humidity:
+			result["humidity"] = parseHumidity(sensorData)
+		case composite:
+			result["temperature"] = parseTemperature(sensorData)
+			result["humidity"] = parseHumidity(sensorData[2:])
 		}
 	}
 
-	return &temp, &humi
+	return result
+}
+
+func parseTemperature(sensorData []byte) float32 {
+	return float32(int16(binary.LittleEndian.Uint16(sensorData))) / 10
+}
+
+func parseHumidity(sensorData []byte) float32 {
+	return float32(binary.LittleEndian.Uint16(sensorData)) / 10
 }

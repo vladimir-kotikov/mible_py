@@ -9,9 +9,11 @@ RUN go build
 FROM alpine
 COPY --from=0 /build/mible /mible
 
-ENV broker_address=
-ENV device_address=
-ENV update_interval=
-ENV sentry_dsn=
+ENV BROKER_ADDRESS=
+ENV DEVICE_ADDRESS=
+ENV DEVICE_NAME=
+ENV UPDATE_INTERVAL=
+ENV SENTRY_DSN=
+ENV DEBUG=
 
 ENTRYPOINT [ "/mible"]

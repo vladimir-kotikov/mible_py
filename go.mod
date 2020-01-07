@@ -2,8 +2,6 @@ module mible
 
 go 1.13
 
-// replace github.com/go-ble/ble => ../ble
-
 require (
 	github.com/crgimenes/goconfig v1.2.1
 	github.com/eclipse/paho.mqtt.golang v1.2.0
@@ -12,5 +10,7 @@ require (
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/mattn/go-isatty v0.0.11 // indirect
 	github.com/pkg/errors v0.8.1
+	github.com/sirupsen/logrus v1.4.2
 	gobot.io/x/gobot v1.14.0
+	google.golang.org/appengine v1.6.5
 )

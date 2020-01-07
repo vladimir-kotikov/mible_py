@@ -20,8 +20,8 @@ var (
 // Message is a message received from the broker.
 type Message paho.Message
 
-// Adaptor is the Gobot Adaptor for MQTT
-type Adaptor struct {
+// Broker is the Gobot Broker for MQTT
+type Broker struct {
 	name          string
 	Host          string
 	clientID      string
@@ -37,9 +37,9 @@ type Adaptor struct {
 	qos           int
 }
 
-// NewAdaptor creates a new mqtt adaptor with specified host and client id
-func NewAdaptor(host string, clientID string) *Adaptor {
-	return &Adaptor{
+// NewBroker creates a new mqtt adaptor with specified host and client id
+func NewBroker(host string, clientID string) *Broker {
+	return &Broker{
 		name:          gobot.DefaultName("MQTT"),
 		Host:          host,
 		autoReconnect: false,
@@ -49,9 +49,9 @@ func NewAdaptor(host string, clientID string) *Adaptor {
 	}
 }
 
-// NewAdaptorWithAuth creates a new mqtt adaptor with specified host, client id, username, and password.
-func NewAdaptorWithAuth(host, clientID, username, password string) *Adaptor {
-	return &Adaptor{
+// NewBrokerWithAuth creates a new mqtt adaptor with specified host, client id, username, and password.
+func NewBrokerWithAuth(host, clientID, username, password string) *Broker {
+	return &Broker{
 		name:          "MQTT",
 		Host:          host,
 		autoReconnect: false,
@@ -64,55 +64,55 @@ func NewAdaptorWithAuth(host, clientID, username, password string) *Adaptor {
 }
 
 // Name returns the MQTT Adaptor's name
-func (a *Adaptor) Name() string { return a.name }
+func (a *Broker) Name() string { return a.name }
 
 // SetName sets the MQTT Adaptor's name
-func (a *Adaptor) SetName(n string) { a.name = n }
+func (a *Broker) SetName(n string) { a.name = n }
 
 // Port returns the Host name
-func (a *Adaptor) Port() string { return a.Host }
+func (a *Broker) Port() string { return a.Host }
 
 // AutoReconnect returns the MQTT AutoReconnect setting
-func (a *Adaptor) AutoReconnect() bool { return a.autoReconnect }
+func (a *Broker) AutoReconnect() bool { return a.autoReconnect }
 
 // SetAutoReconnect sets the MQTT AutoReconnect setting
-func (a *Adaptor) SetAutoReconnect(val bool) { a.autoReconnect = val }
+func (a *Broker) SetAutoReconnect(val bool) { a.autoReconnect = val }
 
 // CleanSession returns the MQTT CleanSession setting
-func (a *Adaptor) CleanSession() bool { return a.cleanSession }
+func (a *Broker) CleanSession() bool { return a.cleanSession }
 
 // SetCleanSession sets the MQTT CleanSession setting. Should be false if reconnect is enabled. Otherwise all subscriptions will be lost
-func (a *Adaptor) SetCleanSession(val bool) { a.cleanSession = val }
+func (a *Broker) SetCleanSession(val bool) { a.cleanSession = val }
 
 // UseSSL returns the MQTT server SSL preference
-func (a *Adaptor) UseSSL() bool { return a.useSSL }
+func (a *Broker) UseSSL() bool { return a.useSSL }
 
 // SetUseSSL sets the MQTT server SSL preference
-func (a *Adaptor) SetUseSSL(val bool) { a.useSSL = val }
+func (a *Broker) SetUseSSL(val bool) { a.useSSL = val }
 
 // ServerCert returns the MQTT server SSL cert file
-func (a *Adaptor) ServerCert() string { return a.serverCert }
+func (a *Broker) ServerCert() string { return a.serverCert }
 
 // SetQoS sets the QoS value passed into the MTT client on Publish/Subscribe events
-func (a *Adaptor) SetQoS(qos int) { a.qos = qos }
+func (a *Broker) SetQoS(qos int) { a.qos = qos }
 
 // SetServerCert sets the MQTT server SSL cert file
-func (a *Adaptor) SetServerCert(val string) { a.serverCert = val }
+func (a *Broker) SetServerCert(val string) { a.serverCert = val }
 
 // ClientCert returns the MQTT client SSL cert file
-func (a *Adaptor) ClientCert() string { return a.clientCert }
+func (a *Broker) ClientCert() string { return a.clientCert }
 
 // SetClientCert sets the MQTT client SSL cert file
-func (a *Adaptor) SetClientCert(val string) { a.clientCert = val }
+func (a *Broker) SetClientCert(val string) { a.clientCert = val }
 
 // ClientKey returns the MQTT client SSL key file
-func (a *Adaptor) ClientKey() string { return a.clientKey }
+func (a *Broker) ClientKey() string { return a.clientKey }
 
 // SetClientKey sets the MQTT client SSL key file
-func (a *Adaptor) SetClientKey(val string) { a.clientKey = val }
+func (a *Broker) SetClientKey(val string) { a.clientKey = val }
 
 // Connect returns true if connection to mqtt is established
-func (a *Adaptor) Connect() (err error) {
+func (a *Broker) Connect() (err error) {
 	a.client = paho.NewClient(a.createClientOptions())
 	if token := a.client.Connect(); token.Wait() && token.Error() != nil {
 		err = multierror.Append(err, token.Error())
@@ -122,7 +122,7 @@ func (a *Adaptor) Connect() (err error) {
 }
 
 // Disconnect returns true if connection to mqtt is closed
-func (a *Adaptor) Disconnect() (err error) {
+func (a *Broker) Disconnect() (err error) {
 	if a.client != nil {
 		a.client.Disconnect(500)
 	}
@@ -130,13 +130,13 @@ func (a *Adaptor) Disconnect() (err error) {
 }
 
 // Finalize returns true if connection to mqtt is finalized successfully
-func (a *Adaptor) Finalize() (err error) {
+func (a *Broker) Finalize() (err error) {
 	a.Disconnect()
 	return
 }
 
 // Publish a message under a specific topic
-func (a *Adaptor) Publish(topic string, message []byte) bool {
+func (a *Broker) Publish(topic string, message []byte) bool {
 	_, err := a.PublishWithQOS(topic, a.qos, message)
 	if err != nil {
 		return false
@@ -146,7 +146,7 @@ func (a *Adaptor) Publish(topic string, message []byte) bool {
 }
 
 // PublishAndRetain publishes a message under a specific topic with retain flag
-func (a *Adaptor) PublishAndRetain(topic string, message []byte) bool {
+func (a *Broker) PublishAndRetain(topic string, message []byte) bool {
 	if a.client == nil {
 		return false
 	}
@@ -156,7 +156,7 @@ func (a *Adaptor) PublishAndRetain(topic string, message []byte) bool {
 }
 
 // PublishWithQOS allows per-publish QOS values to be set and returns a poken.Token
-func (a *Adaptor) PublishWithQOS(topic string, qos int, message []byte) (paho.Token, error) {
+func (a *Broker) PublishWithQOS(topic string, qos int, message []byte) (paho.Token, error) {
 	if a.client == nil {
 		return nil, ErrNilClient
 	}
@@ -166,7 +166,7 @@ func (a *Adaptor) PublishWithQOS(topic string, qos int, message []byte) (paho.To
 }
 
 // OnWithQOS allows per-subscribe QOS values to be set and returns a paho.Token
-func (a *Adaptor) OnWithQOS(event string, qos int, f func(msg Message)) (paho.Token, error) {
+func (a *Broker) OnWithQOS(event string, qos int, f func(msg Message)) (paho.Token, error) {
 	if a.client == nil {
 		return nil, ErrNilClient
 	}
@@ -179,7 +179,7 @@ func (a *Adaptor) OnWithQOS(event string, qos int, f func(msg Message)) (paho.To
 }
 
 // On subscribes to a topic, and then calls the message handler function when data is received
-func (a *Adaptor) On(event string, f func(msg Message)) bool {
+func (a *Broker) On(event string, f func(msg Message)) bool {
 	_, err := a.OnWithQOS(event, a.qos, f)
 	if err != nil {
 		return false
@@ -187,7 +187,7 @@ func (a *Adaptor) On(event string, f func(msg Message)) bool {
 	return true
 }
 
-func (a *Adaptor) createClientOptions() *paho.ClientOptions {
+func (a *Broker) createClientOptions() *paho.ClientOptions {
 	opts := paho.NewClientOptions()
 	opts.AddBroker(a.Host)
 	opts.SetClientID(a.clientID)
@@ -206,7 +206,7 @@ func (a *Adaptor) createClientOptions() *paho.ClientOptions {
 
 // newTLSConfig sets the TLS config in the case that we are using
 // an MQTT broker with TLS
-func (a *Adaptor) newTLSConfig() *tls.Config {
+func (a *Broker) newTLSConfig() *tls.Config {
 	// Import server certificate
 	var certpool *x509.CertPool
 	if len(a.ServerCert()) > 0 {
