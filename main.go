@@ -8,6 +8,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	log "github.com/sirupsen/logrus"
 	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/platforms/mqtt"
 )
 
 func main() {
@@ -27,7 +28,7 @@ func main() {
 
 	adaptor := NewBluetoothAdapter()
 	driver := NewMibleDriver(adaptor, cfg.DeviceName, cfg.DeviceAddress)
-	broker := NewBroker(cfg.BrokerAddress, "Mible")
+	broker := mqtt.NewAdaptor(cfg.BrokerAddress, "Mible")
 
 	unitByChar := map[string]string{
 		"temperature": "°C",

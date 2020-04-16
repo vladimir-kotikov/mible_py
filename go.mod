@@ -11,6 +11,6 @@ require (
 	github.com/mattn/go-isatty v0.0.11 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2
-	gobot.io/x/gobot v1.14.0
+	gobot.io/x/gobot v1.14.1-0.20200114062503-06429046a55c
 	google.golang.org/appengine v1.6.5
 )

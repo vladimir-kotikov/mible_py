@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"gobot.io/x/gobot/platforms/mqtt"
 )
 
 var (
@@ -24,7 +25,7 @@ type DiscoPayload struct {
 
 // Sensor represents a single sensor in mible device
 type Sensor struct {
-	broker    *Broker
+	broker    *mqtt.Adaptor
 	name      string
 	char      string
 	unit      string
@@ -32,7 +33,7 @@ type Sensor struct {
 }
 
 // NewSensor creates a new sensor
-func NewSensor(broker *Broker, name, char, unit, baseTopic string) *Sensor {
+func NewSensor(broker *mqtt.Adaptor, name, char, unit, baseTopic string) *Sensor {
 	return &Sensor{
 		broker:    broker,
 		name:      name,
